@@ -1,0 +1,77 @@
+class CartSerializer (serializers.ModelSerializer):
+    
+    # Get user
+    user = serializers.PrimaryKeyRelatedField( 
+        queryset=User.objects.all(), 
+        default=serializers.CurrentUserDefault(),
+        read_only=True,
+    )
+    
+    # When writing all you need it menuitem_id
+    # When reading you will see menuitem 
+    menuitem_id = serializers.PrimaryKeyRelatedField(
+        queryset=MenuItem.objects.all(),
+        write_only=True,
+        source="menuitem"
+    )
+    menuitem = MenuItemSerializer(read_only=True)
+    
+    # Ensure quantity is a value greater than or equal to 1
+    class Meta:
+        model = Cart
+        fields = ['user', 'menuitem_id', 'menuitem', 'quantity', 'unit_price', 'price']
+        extra_kwargs = {
+            'quantity': {'min_value': 1},
+        }
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Cart.objects.all(),
+                fields=['user', 'menuitem'], 
+                message="This item is already in your cart."
+            )
+        ]
+        read_only_fields = ['unit_price', 'price']
+    
+    def create(self, validated_data):
+        # take out the menuitem_id (doesn't match a model field)
+        menuitem = validated_data['menuitem']
+
+        # compute derived fields
+        quantity = validated_data['quantity']
+        unit_price = menuitem.price
+        price = unit_price * quantity
+
+        # create and return cart instance
+        return Cart.objects.create(
+            menuitem=menuitem,
+            unit_price=unit_price,
+            price=price,
+            **validated_data  # user and quantity remain
+        )
+    
+    def update(self, instance, validated_data):
+        instance.menuitem = validated_data.get('menuitem', instance.menuitem)
+        instance.quantity = validated_data.get('quantity', instance.quantity)
+        instance.unit_price = instance.menuitem.price
+        instance.price = instance.unit_price * instance.quantity
+        instance.save()
+        return instance
+    
+class OrderSerializer (serializers.ModelSerializer):
+    
+    # Get user
+    user = serializers.PrimaryKeyRelatedField( 
+        read_only=True,
+    )
+    
+    # Get deivery crew
+    delivery_crew = serializers.PrimaryKeyRelatedField( 
+        queryset=User.objects.filter(groups__name="Delivery Crew"),
+        allow_null=True,
+        required=False,
+    )
+    
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'delivery_crew', 'status', 'total', 'date']   
+        read_only_fields = ['user', 'total', 'date']
