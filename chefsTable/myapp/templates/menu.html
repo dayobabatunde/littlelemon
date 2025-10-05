@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+
+    <!-- Begin block content -->
+    {% block blockname %}
+      <p>About Us</p>
+      <p>This is a Menu page for Little Lemon</p>
+    {% endblock %}
+    <!-- End block content -->
+
+    <!-- Add heading code -->
+    <h1 style="color: #495E57">Menu</h1>
+
+    <!-- Add paragraph code -->
+    {% if menu %}
+      {% for item in menu %}
+        <p>{{ item.name }}: {{ item.price }}</p>
+      {% endfor %}
+    {% else %}
+      No items to display
+    {% endif %}
+
+    <!-- Add image code -->
+  </body>
+</html>
